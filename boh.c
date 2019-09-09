@@ -30,6 +30,11 @@ int entAmount=0;
 int relSize=0;
 int relAmount=0;
 
+//int inserisciEnt(entities *a, char *e,int size)
+//{	
+//	int cmp=strcmp(e,a[cx]
+//}
+
 int searchRelInRep(report* rep, char *s, int sx, int dx){
 	if(sx>dx) return -1;
 	int cx=(sx+dx)/2;
@@ -158,7 +163,7 @@ void addrel(char *input)
 	}
 	else if ((posizioneRelazione!=-1)&&(posOri!=-1)) // Se esiste già una relazione che si chiama così in output
 	{
-		int posDest=searchDest(output[posizioneRelazione].persone,dest,0,output[posizioneRelazione].size-1); // TODO Implement (restituisce la posizione del destinatario nell'array "persone")
+		int posDest=searchDest(output[posizioneRelazione].persone,dest,0,output[posizioneRelazione].size-1);
 		if ((posDest==-1)&&(posOri!=-1)) // Se esiste l'origine (in entita) ma non il destinatario (in persone, dentro output)
 		{
 			output[posizioneRelazione].persone=realloc(output[posizioneRelazione].persone,(output[posizioneRelazione].size+10)*sizeof(score));
@@ -215,12 +220,12 @@ void addent (char *ent){
 	ptr=strtok(NULL,del);
 	if (entSize==0) {
 		printf("Sono 1\n");
-		entSize=10;
-		entita=(entities*)malloc(10*sizeof(entities));
-		for (int k=0;k<10;k++)
+		entSize=50;
+		entita=(entities*)malloc(50*sizeof(entities));
+		for (int k=0;k<50;k++)
 		{
-			entita[k].nameEnt=(char*)malloc(30*sizeof(char));
-			*entita[k].nameEnt='\0';
+			entita[k].nameEnt=(char*)malloc(50*sizeof(char));
+			strcpy(entita[k].nameEnt,"\0");
 		}
 	}
 	else { // Se l'array è non vuoto
@@ -231,12 +236,14 @@ void addent (char *ent){
 	}
 	if (entSize==entAmount){ // Se ci sono tante entità quanto spazio allocato allora realloca
 		printf("Sono 3\n");
-		entita=realloc(entita,(entAmount+5)*sizeof(entities));
-		entSize+=5;
+		entita=realloc(entita,(entAmount+50)*sizeof(entities));
+		entSize+=50;
 		// TODO inizializzare ciò che è nuovo
 	}
 	printf("Metto %s in entita[%d]\n",ptr,entAmount);
+//	printf("in entita[entAmount] c'e': %s",entita[entAmount].nameEnt);
 	strcpy(entita[entAmount].nameEnt,ptr);	// Copia l'entità (derivante da strtok di ptr) nel primo spazio disponibile
+	printf("SONO QUI\n");
 	entAmount++;
 	//sortEnt(entita); // TODO Inserimento ordinato
 	for (int j=0;j<entAmount;j++) printf("ADDENT: Entita: %s , entAmount: %d\n",entita[j].nameEnt,entAmount); // Per visualizzare
@@ -249,16 +256,16 @@ void delent(char *input)
 	char del[] = " ";
 	char *ent=strtok(input,del);
 	ent=strtok(NULL,del);
-	printf("%s\n",ent);
+	//printf("%s\n",ent);
 	int posEnt=searchEnt(entita,ent,0,entAmount-1);
 	if (posEnt==-1) return;
-	printf("L'entità %s è al posto %d di entita\n",ent,posEnt);
+	//printf("L'entità %s è al posto %d di entita\n",ent,posEnt);
 	int i;
 	for (i=posEnt; i<entAmount-1; i++)
 	{
 		entita[i]=entita[i+1];
 	}
-	for (i=0;i<entAmount-1;i++) printf("DELENT: Entita: %s, entAmount: %d\n",entita[i].nameEnt,entAmount-1); //Per visualizzare 
+	entita[entAmount-1].nameEnt="\0";
 	//entita=realloc(entita,(entAmount-1)*sizeof(entita));
 	
 	for (i=0;i<relAmount;i++)
@@ -276,7 +283,28 @@ void delent(char *input)
 		}
 	}
 	entAmount--;
-	//entSize--; Commentato come realloc di entita -1
+	//entSize--;
+	for (i=0;i<entAmount;i++) printf("DELENT: Entita al posto %d: %s, entAmount: %d\n",i,entita[i].nameEnt,entAmount); //Per visualizzare 
+}
+
+void delrel(char *input)
+{
+	char del[] = " ";
+	char *orig=strtok(input,del);
+	orig=strtok(NULL,del);
+	char* dest=strtok(NULL,del);
+	char* nameRel=strtok(NULL,del);
+	int posRel=searchRelInRep(output,nameRel,0,relAmount-1);
+	if (posRel==-1) return;
+	int posOri=searchEnt(entita,orig,0,entAmount-1);
+	if (posOri==-1) return;
+	int posDest=searchDest(output[posRel].persone,dest,0,output[posRel].size-1);
+	if (posDest==-1) return;
+	for (int i=posDest; i<output[posRel].size-1;i++)
+	{
+		output[posRel].persone[posDest]=output[posRel].persone[posDest+1];
+	}
+	output[posRel].size--; //TODO Check se l'unica cosa da fare nel delrel è eliminare il relazionato
 }
 
 int main() {
@@ -293,8 +321,8 @@ int main() {
 		}
 		if (0==strncmp("delent",input,6)) delent(input);
 		if (0==strncmp("addrel",input,6)) addrel(input);
-		/*if (0==strncmp("delrel",input,6)) delrel(input);
-		if (0==strncmp("report",input,6)) addent(input);*/
+		if (0==strncmp("delrel",input,6)) delrel(input);
+		/*if (0==strncmp("report",input,6)) addent(input);*/
         }      
 	return 0;
 }
