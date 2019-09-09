@@ -2,16 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct relations
-{
-	char *nameRel; // Nome della relazione
-	char **nameEntDest; // Array di stringhe di destinatari della relazione "nameRel"
-} relations;
-
 typedef struct entities
 {
 	char *nameEnt; // Nome dell'entità
-	relations *destinatari; // Array di relazioni uscenti da "nameEnt"
 } entities;
 
 
@@ -19,7 +12,7 @@ typedef struct score
 {
 	char *relazionati; // Stringa destinataria della relazione
 	int *posOrig; // Vettore di "entAmount" interi in cui se l'iesimo bit è 1, allora esiste relazione "nameRel" fra "relazionati" e l'iesima entita 
-	int amount; // Numero di volte in cui "relazionati" è destinataria di "nameRel" di report
+	int amount; // Numero di volte in cui "relazionati" è destinataria di "nameRel" di report (numero di 1 in posOrig)
 } score;
 
 typedef struct report
@@ -221,6 +214,7 @@ void addent (char *ent){
 	char *ptr=strtok(ent,del);
 	ptr=strtok(NULL,del);
 	if (entSize==0) {
+		printf("Sono 1\n");
 		entSize=10;
 		entita=(entities*)malloc(10*sizeof(entities));
 		for (int k=0;k<10;k++)
@@ -230,20 +224,22 @@ void addent (char *ent){
 		}
 	}
 	else { // Se l'array è non vuoto
+		printf("Sono 2\n");
 		for (int i=0; i<entAmount; i++){ // Controllo se c'è già un'entità con lo stesso nome
 			if (strcmp(entita[i].nameEnt,ptr)==0) return;
 		}
 	}
 	if (entSize==entAmount){ // Se ci sono tante entità quanto spazio allocato allora realloca
+		printf("Sono 3\n");
 		entita=realloc(entita,(entAmount+5)*sizeof(entities));
 		entSize+=5;
 		// TODO inizializzare ciò che è nuovo
 	}
+	printf("Metto %s in entita[%d]\n",ptr,entAmount);
 	strcpy(entita[entAmount].nameEnt,ptr);	// Copia l'entità (derivante da strtok di ptr) nel primo spazio disponibile
 	entAmount++;
-	entita[entAmount].destinatari=NULL;
-	sortEnt(entita);
-	for (int j=0;j<entAmount;j++) printf("Entita: %s , entAmount: %d",entita[j].nameEnt,entAmount); // Per visualizzare
+	//sortEnt(entita); // TODO Inserimento ordinato
+	for (int j=0;j<entAmount;j++) printf("ADDENT: Entita: %s , entAmount: %d\n",entita[j].nameEnt,entAmount); // Per visualizzare
 	
 	return;
 }
@@ -253,7 +249,34 @@ void delent(char *input)
 	char del[] = " ";
 	char *ent=strtok(input,del);
 	ent=strtok(NULL,del);
+	printf("%s\n",ent);
+	int posEnt=searchEnt(entita,ent,0,entAmount-1);
+	if (posEnt==-1) return;
+	printf("L'entità %s è al posto %d di entita\n",ent,posEnt);
+	int i;
+	for (i=posEnt; i<entAmount-1; i++)
+	{
+		entita[i]=entita[i+1];
+	}
+	for (i=0;i<entAmount-1;i++) printf("DELENT: Entita: %s, entAmount: %d\n",entita[i].nameEnt,entAmount-1); //Per visualizzare 
+	//entita=realloc(entita,(entAmount-1)*sizeof(entita));
 	
+	for (i=0;i<relAmount;i++)
+	{
+		for (int j=0; j<output[i].size;j++)
+		{
+			if (output[i].persone[j].posOrig[posEnt]==1) output[i].persone[j].amount--;
+			int related=searchDest(output[i].persone,ent,0,output[i].size-1);
+			if(related != -1) 
+			{
+				for (int b=related;b<output[i].size-1;b++){ output[i].persone[b]=output[i].persone[b+1]; }
+				output[i].size--;
+			}
+			for (int a=posEnt;a<entAmount-1;a++) { output[i].persone[j].posOrig[a] = output[i].persone[j].posOrig[a+1]; }
+		}
+	}
+	entAmount--;
+	//entSize--; Commentato come realloc di entita -1
 }
 
 int main() {
@@ -268,9 +291,9 @@ int main() {
 		if (strncmp("addent",input,6) == 0) {
 			addent(input);
 		}
-		/*if (0==strncmp("delent",input,6)) delent(input);
+		if (0==strncmp("delent",input,6)) delent(input);
 		if (0==strncmp("addrel",input,6)) addrel(input);
-		if (0==strncmp("delrel",input,6)) delrel(input);
+		/*if (0==strncmp("delrel",input,6)) delrel(input);
 		if (0==strncmp("report",input,6)) addent(input);*/
         }      
 	return 0;
