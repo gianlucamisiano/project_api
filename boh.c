@@ -287,7 +287,7 @@ void delent(char *input)
 	for (i=0;i<entAmount;i++) printf("DELENT: Entita al posto %d: %s, entAmount: %d\n",i,entita[i].nameEnt,entAmount); //Per visualizzare 
 }
 
-void delrel(char *input)
+void delrel(char *input)  //TODO Check se l'unica cosa da fare nel delrel è eliminare il relazionato e la relazione (eventualmente)
 {
 	char del[] = " ";
 	char *orig=strtok(input,del);
@@ -304,7 +304,33 @@ void delrel(char *input)
 	{
 		output[posRel].persone[posDest]=output[posRel].persone[posDest+1];
 	}
-	output[posRel].size--; //TODO Check se l'unica cosa da fare nel delrel è eliminare il relazionato
+	output[posRel].size--;
+	if (output[posRel].size==0)
+	{
+		for (int j=posRel; j<relAmount-1; j++)
+		{
+			output[posRel]=output[posRel+1];
+		}
+		relAmount--;
+	}
+}
+//TODO Ask quando usare il FREE
+void report()
+{
+	for (int i=0; i<relAmount; i++)
+	{
+		max=-1;
+		printf("%s",output[i].nameRel);
+		for (int j=0; j<output[i].size; j++)		
+		{
+			if (output[i].persone[j].amount>=max)
+			{
+				max=output[i].persone[j].amount;
+				printf(" %s", output[i].persone[j].relazionati);
+			}
+		}
+		printf("; ");
+	}
 }
 
 int main() {
@@ -322,7 +348,7 @@ int main() {
 		if (0==strncmp("delent",input,6)) delent(input);
 		if (0==strncmp("addrel",input,6)) addrel(input);
 		if (0==strncmp("delrel",input,6)) delrel(input);
-		/*if (0==strncmp("report",input,6)) addent(input);*/
+		if (0==strncmp("report",input,6)) report();
         }      
 	return 0;
 }
