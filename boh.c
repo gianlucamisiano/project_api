@@ -30,10 +30,44 @@ int entAmount=0;
 int relSize=0;
 int relAmount=0;
 
-//int inserisciEnt(entities *a, char *e,int size)
-//{	
-//	int cmp=strcmp(e,a[cx]
-//}
+report **puntRel; // TODO modifica inserisciRel
+score **puntDest;
+void inserisciEnt(char *input)
+{
+	int i;
+	if (entAmount==0)
+	{
+		strcpy(entita[0].nameEnt,input);
+		entAmount++;
+		return;
+	}
+	for (i=entAmount-1; (i>=0 && strcmp(entita[i].nameEnt,input)>0);i--)
+	{
+		strcpy(entita[i+1].nameEnt,entita[i].nameEnt);
+	}
+	strcpy(entita[i+1].nameEnt,input);
+	entAmount++;
+	return;
+}
+
+void inserisciRel(char *o,char *d, char *r)
+{
+	int i;
+	if (relAmount==0)
+	{
+		strcpy(output[0].nameRel,r);
+		relAmount++;
+		return;
+	}
+	for (i=relAmount-1; (i>=0 && strcmp(output[i].nameRel,r)>0);i--)
+	{
+		//strcpy(output[i+1].nameRel,output[i].nameRel);
+		output[i+1]=output[i];
+	} // TODO Non basta strcpy
+	strcpy(entita[i+1].nameEnt,r);
+	relAmount++;
+	return;
+}
 
 int searchRelInRep(report* rep, char *s, int sx, int dx){
 	if(sx>dx) return -1;
@@ -42,16 +76,6 @@ int searchRelInRep(report* rep, char *s, int sx, int dx){
 	if(cmp==0) return cx;
 	if(cmp>0) return searchRelInRep(rep,s,cx+1,dx);
 	if(cmp<0) return searchRelInRep(rep,s,sx,cx-1);
-	return -1;
-}
-
-int searchOrig(report* rep, char *s, int sx, int dx){
-	if(sx>dx) return -1;
-	int cx=(sx+dx)/2;
-	int cmp=strcmp(s,rep[cx].nameRel);
-	if(cmp==0) return cx;
-	if(cmp>0) return searchOrig(rep,s,cx+1,dx);
-	if(cmp<0) return searchOrig(rep,s,sx,cx-1);
 	return -1;
 }
 int searchEnt(entities *a,char *s, int sx,int dx){
@@ -136,7 +160,7 @@ void addrel(char *input)
 	char* dest=strtok(NULL,del);
 	char* nameRel=strtok(NULL,del);
 	int posizioneRelazione=searchRelInRep(output,nameRel,0,relSize-1);
-	int posOri=searchEnt(entita,orig,0,entAmount-1); //TODO 9?????
+	int posOri=searchEnt(entita,orig,0,entAmount-1);
 	if ((relSize==0)&&(posOri!=-1))
 	{
 		output=(report*)malloc(100*sizeof(report));
@@ -148,15 +172,15 @@ void addrel(char *input)
 		{
 			output=(report*)realloc(output,(relSize+10)*sizeof(report));
 			output[relAmount].nameRel=(char*)malloc(50*sizeof(char));
-			strcpy(output[relAmount].nameRel,nameRel);
-			output[relAmount].size=1;
+			// TODO strcpy(output[relAmount].nameRel,nameRel);
+			//output[relAmount].size=1;
 			output[relAmount].persone=(score*)malloc(50*sizeof(score));
 			output[relAmount].persone[0].relazionati=(char*)malloc(50*sizeof(char));
-			strcpy(output[relAmount].persone[0].relazionati,dest);
+			//strcpy(output[relAmount].persone[0].relazionati,dest);
 			output[relAmount].persone[0].posOrig=(int*)malloc(entAmount*sizeof(int));
 			for (int i=0; i<entAmount; i++) output[relAmount].persone[0].posOrig=0;
 			output[relAmount].persone[0].posOrig[posOri]=1; // Se il bit di posOrig in una posizione è 1 allora addRel ritorna.
-			sortReport(output); // TODO switch con inserimento ordinato
+			//sortReport(output); // switch con inserimento ordinato
 			
 		}
 		//inserisciRel(orig,dest,nameRel); // TODO Implementa ordinato e ricordati il bit e aggiorna relAmount
@@ -181,38 +205,6 @@ void addrel(char *input)
 		}
 	}
 	relAmount++;
-	/*if (relSize==0)
-	{
-		relSize=10;
-		output=(report*)malloc(10*sizeof(report));
-		for (int i=0;i<10;i++)
-		{
-			output[i].nameRel=(char*)malloc(30*sizeof(char));
-			*output[i].nameRel='\0';
-			output[i].amountOfPeople=0;
-		}
-	}
-	else
-	{
-		int posRel=searchRelInRep(output,nameRel,0,relAmount-1);
-		if (posRel!=-1)
-		{
-				output[posRel].persone
-		}
-	}
-	if (relSize=relAmount)
-	{
-		output=realloc(output,(relAmount+5)*sizeof(report));
-		relSize+=5;
-	}
-	strcpy(report[relAmount].nameRel,nameRel);
-	if((searchRelInRep(output,nameRel,0,relSize-1)!=-1)&&(searchOrig!=-1)&&(searchDest!=-1))
-	{
-		output[relAmount].persone=(score*)realloc(sizeof(score));
-		output[relAmount].persone[output[relAmount].amountOfPeople].amount++;
-	}
-	relAmount++;
-	report[relAmount].persone.relazionati*/
 }
 void addent (char *ent){
 	char del[] = " ";
@@ -242,10 +234,11 @@ void addent (char *ent){
 	}
 	printf("Metto %s in entita[%d]\n",ptr,entAmount);
 //	printf("in entita[entAmount] c'e': %s",entita[entAmount].nameEnt);
-	strcpy(entita[entAmount].nameEnt,ptr);	// Copia l'entità (derivante da strtok di ptr) nel primo spazio disponibile
+	printf("PTR: %s\n",ptr);
+	inserisciEnt(ptr);
+	//strcpy(entita[entAmount].nameEnt,ptr);	// Copia l'entità (derivante da strtok di ptr) nel primo spazio disponibile
 	printf("SONO QUI\n");
-	entAmount++;
-	//sortEnt(entita); // TODO Inserimento ordinato
+	//entAmount++;
 	for (int j=0;j<entAmount;j++) printf("ADDENT: Entita: %s , entAmount: %d\n",entita[j].nameEnt,entAmount); // Per visualizzare
 	
 	return;
@@ -263,16 +256,17 @@ void delent(char *input)
 	int i;
 	for (i=posEnt; i<entAmount-1; i++)
 	{
-		entita[i]=entita[i+1];
+		//entita[i]=entita[i+1];
+		strcpy(entita[i].nameEnt,entita[i+1].nameEnt);
 	}
-	entita[entAmount-1].nameEnt="\0";
+	//entita[entAmount-1].nameEnt="\0";
 	//entita=realloc(entita,(entAmount-1)*sizeof(entita));
 	
 	for (i=0;i<relAmount;i++)
 	{
 		for (int j=0; j<output[i].size;j++)
 		{
-			if (output[i].persone[j].posOrig[posEnt]==1) output[i].persone[j].amount--;
+			if (output[i].persone[j].posOrig[posEnt]==1) output[i].persone[j].amount--; //TODO entita in rel con se stesse
 			int related=searchDest(output[i].persone,ent,0,output[i].size-1);
 			if(related != -1) 
 			{
@@ -315,8 +309,14 @@ void delrel(char *input)  //TODO Check se l'unica cosa da fare nel delrel è eli
 	}
 }
 //TODO Ask quando usare il FREE
-void report()
-{
+void reportOut()
+{	
+	if (relAmount==0)
+	{
+		printf("none");
+		return;
+	}
+	int max;
 	for (int i=0; i<relAmount; i++)
 	{
 		max=-1;
@@ -329,7 +329,7 @@ void report()
 				printf(" %s", output[i].persone[j].relazionati);
 			}
 		}
-		printf("; ");
+		printf("%d; ",max);
 	}
 }
 
@@ -348,7 +348,7 @@ int main() {
 		if (0==strncmp("delent",input,6)) delent(input);
 		if (0==strncmp("addrel",input,6)) addrel(input);
 		if (0==strncmp("delrel",input,6)) delrel(input);
-		if (0==strncmp("report",input,6)) report();
+		if (0==strncmp("report",input,6)) reportOut();
         }      
 	return 0;
 }
