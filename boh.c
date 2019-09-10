@@ -51,7 +51,7 @@ void inserisciEnt(char *input)
 	return;
 }
 
-void inserisciRel(char *r, int posR) // TODO Input è un puntatore a una relazione già costruita
+void inserisciRel(char *r)
 {
 	int i;
 	for (i=relAmount-1; (i>=0 && strcmp(puntRel[i]->nameRel,r)>0);i--)
@@ -63,13 +63,26 @@ void inserisciRel(char *r, int posR) // TODO Input è un puntatore a una relazio
 	return;
 }
 
-int searchRel(report* rep, char *s, int sx, int dx){
+void sortDest(char *r, char *d, int posRel, int posOri)
+{
+	int i;
+	for (i=puntRel[posRel]->size-1; (i>=0 && strcmp((puntRel[posRel]->persone[i])->relazionati,r)>0);i--)
+	{
+		puntRel[posRel]->persone[i+1]=puntRel[posRel]->persone[i];
+	}
+	strcpy((puntRel[posRel]->persone[i+1])->relazionati,d);
+	(puntRel[posRel]->persone[i+1])->posOrig[posOri]=1;
+	(puntRel[posRel]->persone[i+1])->amount++;
+	puntRel[posRel]->size++;
+}
+
+int searchRel(char *s, int sx, int dx){
 	if(sx>dx) return -1;
 	int cx=(sx+dx)/2;
-	int cmp=strcmp(s,rep[cx].nameRel);
+	int cmp=strcmp(s,puntRel[cx]->nameRel);
 	if(cmp==0) return cx;
-	if(cmp>0) return searchRelInRep(rep,s,cx+1,dx);
-	if(cmp<0) return searchRelInRep(rep,s,sx,cx-1);
+	if(cmp>0) return searchRel(s,cx+1,dx);
+	if(cmp<0) return searchRel(s,sx,cx-1);
 	return -1;
 }
 int searchEnt(entities *a,char *s, int sx,int dx){
@@ -82,10 +95,10 @@ int searchEnt(entities *a,char *s, int sx,int dx){
 	return -1;
 }
 
-int searchDest(score *a,char *s, int sx,int dx){
+int searchDest(score **a,char *s, int sx,int dx){
 	if(sx>dx) return -1;
 	int cx=(sx+dx)/2;
-	int cmp=strcmp(s,a[cx].relazionati);
+	int cmp=strcmp(s,a[cx]->relazionati);
 	if(cmp==0) return cx;
 	if(cmp>0) return searchDest(a,s,cx+1,dx);
 	if(cmp<0) return searchDest(a,s,sx,cx-1);
@@ -155,12 +168,12 @@ void addrel(char *input)
 	if (posOri==-1) return;
 	char* dest=strtok(NULL,del);
 	char* nameRel=strtok(NULL,del);
-	int posizioneRelazione=searchRelInRep(output,nameRel,0,relSize-1);
+	int posizioneRelazione=searchRel(nameRel,0,relSize-1);
 	if (relSize==0)
 	{
 		output=(report*)malloc(100*sizeof(report));
 		puntRel=(report**)malloc(100*sizeof(report*));
-		for (int c=0;i<100;i++)
+		for (int c=0;c<100;c++)
 		{
 			puntRel[c]=&(output[c]);
 			output[c].nameRel=(char*)malloc(50*sizeof(char));
@@ -187,7 +200,7 @@ void addrel(char *input)
 		relSize=100;
 		return;
 	}
-	if (posizioneRelazione==-1) // Se non esiste relazione con questo nome in output (MA CE NE SONO ALTRE GIA IN OUTPUT) TODO edit searchRelInRep
+	if (posizioneRelazione==-1) // Se non esiste relazione con questo nome in output (MA CE NE SONO ALTRE GIA IN OUTPUT)
 	{ 
 		if (relAmount==relSize) // TODO Check se va bene ignorare che sclen e size siano uguali (forse va bene ma non so)
 		{
@@ -233,10 +246,10 @@ void addrel(char *input)
 		int posDest=searchDest(output[posizioneRelazione].persone,dest,0,output[posizioneRelazione].size-1); //TODO edit searchDest
 		if (posDest==-1) // Se non esiste il destinatario (fra i "relazionati") 
 		{
-			if (puntRel[posizioneRelazione].size==puntRel[posizioneRelazione].sclen)
+			if (puntRel[posizioneRelazione]->size==puntRel[posizioneRelazione]->sclen)
 			{
-				puntRel[posizioneRelazione]->persone=realloc(puntRel[posizioneRelazione]->persone,(puntRel[posizioneRelazione]->size+10)*sizeof(score);
-				puntRel[posizioneRelazione].sclen+=10;
+				puntRel[posizioneRelazione]->persone=realloc(puntRel[posizioneRelazione]->persone,(puntRel[posizioneRelazione]->size+10)*sizeof(score));
+				puntRel[posizioneRelazione]->sclen+=10;
 				for (int a=puntRel[posizioneRelazione]->size; a< puntRel[posizioneRelazione]->sclen;a++)
 				{
 					(puntRel[posizioneRelazione]->persone[a])->relazionati=(char*)malloc(50*sizeof(char));
@@ -244,10 +257,7 @@ void addrel(char *input)
 					for (int b=0; b<entAmount; b++) (puntRel[posizioneRelazione]->persone[a])->posOrig[b]=0;
 				}
 			}
-			strcpy((puntRel[posizioneRelazione]->persone[size])->relazionati,dest);
-			(puntRel[posizioneRelazione]->persone[size])->posOrig[posOri]=1;
-			(puntRel[posizioneRelazione]->persone[size])->amount++;
-			puntRel[posizioneRelazione]->size++;
+			sortDest(nameRel, dest, posizioneRelazione, posOri); // TODO Ordine dei relazionati?
 			//output[posizioneRelazione].persone=realloc(output[posizioneRelazione].persone,(output[posizioneRelazione].size+1)*sizeof(score));		
 			//strcpy(output[posizioneRelazione].persone[output[posizioneRelazione].size].relazionati,dest);
 			//if (1==output[posizioneRelazione].persone[output[posizioneRelazione].size].posOrig[posOri]) return;
@@ -307,7 +317,7 @@ void addent (char *ent){
 	return;
 }
 
-void delent(char *input)
+void delent(char *input) // TODO Tomorrow
 {
 	char del[] = " ";
 	char *ent=strtok(input,del);
@@ -351,7 +361,7 @@ void delrel(char *input)  //TODO Check se l'unica cosa da fare nel delrel è eli
 	orig=strtok(NULL,del);
 	char* dest=strtok(NULL,del);
 	char* nameRel=strtok(NULL,del);
-	int posRel=searchRelInRep(output,nameRel,0,relAmount-1);
+	int posRel=searchRel(nameRel,0,relAmount-1);
 	if (posRel==-1) return;
 	int posOri=searchEnt(entita,orig,0,entAmount-1);
 	if (posOri==-1) return;
