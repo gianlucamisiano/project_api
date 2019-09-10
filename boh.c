@@ -243,7 +243,7 @@ void addrel(char *input)
 	}
 	else // Se esiste già una relazione che si chiama così in output
 	{
-		int posDest=searchDest(output[posizioneRelazione].persone,dest,0,output[posizioneRelazione].size-1); //TODO edit searchDest
+		int posDest=searchDest(puntRel[posizioneRelazione]->persone,dest,0,puntRel[posizioneRelazione]->size-1); //TODO edit searchDest
 		if (posDest==-1) // Se non esiste il destinatario (fra i "relazionati") 
 		{
 			if (puntRel[posizioneRelazione]->size==puntRel[posizioneRelazione]->sclen)
@@ -284,7 +284,6 @@ void addent (char *ent){
 	char *ptr=strtok(ent,del);
 	ptr=strtok(NULL,del);
 	if (entSize==0) {
-		printf("Sono 1\n");
 		entSize=50;
 		entita=(entities*)malloc(50*sizeof(entities));
 		for (int k=0;k<50;k++)
@@ -294,26 +293,20 @@ void addent (char *ent){
 		}
 	}
 	else { // Se l'array è non vuoto
-		printf("Sono 2\n");
 		for (int i=0; i<entAmount; i++){ // Controllo se c'è già un'entità con lo stesso nome
 			if (strcmp(entita[i].nameEnt,ptr)==0) return;
 		}
 	}
 	if (entSize==entAmount){ // Se ci sono tante entità quanto spazio allocato allora realloca
-		printf("Sono 3\n");
 		entita=realloc(entita,(entAmount+50)*sizeof(entities));
 		entSize+=50;
 		// TODO inizializzare ciò che è nuovo
 	}
-	printf("Metto %s in entita[%d]\n",ptr,entAmount);
 //	printf("in entita[entAmount] c'e': %s",entita[entAmount].nameEnt);
-	printf("PTR: %s\n",ptr);
 	inserisciEnt(ptr);
 	//strcpy(entita[entAmount].nameEnt,ptr);	// Copia l'entità (derivante da strtok di ptr) nel primo spazio disponibile
-	printf("SONO QUI\n");
 	//entAmount++;
-	for (int j=0;j<entAmount;j++) printf("ADDENT: Entita: %s , entAmount: %d\n",entita[j].nameEnt,entAmount); // Per visualizzare
-	
+	//for (int j=0;j<entAmount;j++) printf("ADDENT: Entita: %s , entAmount: %d\n",entita[j].nameEnt,entAmount); // Per visualizzare
 	return;
 }
 
@@ -337,21 +330,31 @@ void delent(char *input) // TODO Tomorrow
 	
 	for (i=0;i<relAmount;i++)
 	{
-		for (int j=0; j<output[i].size;j++)
+		for (int j=0; j<puntRel[i]->size;j++)
 		{
-			if (output[i].persone[j].posOrig[posEnt]==1) output[i].persone[j].amount--; //TODO entita in rel con se stesse
-			int related=searchDest(output[i].persone,ent,0,output[i].size-1);
+			if ((puntRel[i]->persone[j])->posOrig[posEnt]==1) 
+			{
+				(puntRel[i]->persone[j])->amount--; //TODO entita in rel con se stesse
+				(puntRel[i]->persone[j])->posOrig[posEnt]=0;
+			}		
+			int related=searchDest(puntRel[i]->persone,ent,0,output[i].size-1);
 			if(related != -1) 
 			{
-				for (int b=related;b<output[i].size-1;b++){ output[i].persone[b]=output[i].persone[b+1]; }
-				output[i].size--;
+				for (int b=related;b<output[i].size-1;b++) 
+				{
+					puntRel[i]->persone[b]=puntRel[i]->persone[b+1];
+				}
+				puntRel[i]->size--;
 			}
-			for (int a=posEnt;a<entAmount-1;a++) { output[i].persone[j].posOrig[a] = output[i].persone[j].posOrig[a+1]; }
+			for (int a=posEnt;a<entAmount-1;a++) 
+			{
+				(puntRel[i]->persone[j])->posOrig[a] = (puntRel[i]->persone[j])->posOrig[a+1]; 
+			}
 		}
 	}
 	entAmount--;
 	//entSize--;
-	for (i=0;i<entAmount;i++) printf("DELENT: Entita al posto %d: %s, entAmount: %d\n",i,entita[i].nameEnt,entAmount); //Per visualizzare 
+	//for (i=0;i<entAmount;i++) printf("DELENT: Entita al posto %d: %s, entAmount: %d\n",i,entita[i].nameEnt,entAmount); //Per visualizzare 
 }
 
 void delrel(char *input)  //TODO Check se l'unica cosa da fare nel delrel è eliminare il relazionato e la relazione (eventualmente)
@@ -365,18 +368,19 @@ void delrel(char *input)  //TODO Check se l'unica cosa da fare nel delrel è eli
 	if (posRel==-1) return;
 	int posOri=searchEnt(entita,orig,0,entAmount-1);
 	if (posOri==-1) return;
-	int posDest=searchDest(output[posRel].persone,dest,0,output[posRel].size-1);
+	int sizeOfDests=puntRel[posRel]->size;
+	int posDest=searchDest(puntRel[posRel]->persone,dest,0,sizeOfDests-1);
 	if (posDest==-1) return;
-	for (int i=posDest; i<output[posRel].size-1;i++)
+	for (int i=posDest; i<sizeOfDests-1;i++)
 	{
-		output[posRel].persone[posDest]=output[posRel].persone[posDest+1];
+		puntRel[posRel]->persone[posDest]=puntRel[posRel]->persone[posDest+1];
 	}
-	output[posRel].size--;
-	if (output[posRel].size==0)
+	puntRel[posRel]->size--;
+	if (puntRel[posRel]->size==0)
 	{
 		for (int j=posRel; j<relAmount-1; j++)
 		{
-			output[posRel]=output[posRel+1];
+			puntRel[posRel]=puntRel[posRel+1];
 		}
 		relAmount--;
 	}
@@ -386,20 +390,20 @@ void reportOut()
 {	
 	if (relAmount==0)
 	{
-		printf("none");
+		printf("none"); // TODO Check se si debba andare a capo
 		return;
 	}
 	int max;
 	for (int i=0; i<relAmount; i++)
 	{
 		max=-1;
-		printf("%s",output[i].nameRel);
-		for (int j=0; j<output[i].size; j++)		
+		printf("%s",puntRel[i]->nameRel);
+		for (int j=0; j<puntRel[i]->size; j++)		
 		{
-			if (output[i].persone[j].amount>=max)
+			if ((puntRel[i]->persone[j])->amount>=max)
 			{
-				max=output[i].persone[j].amount;
-				printf(" %s", output[i].persone[j].relazionati);
+				max=(puntRel[i]->persone[j])-> amount;
+				printf(" %s ", (puntRel[i]->persone[j])->relazionati);
 			}
 		}
 		printf("%d; ",max);
