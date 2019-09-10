@@ -19,7 +19,8 @@ typedef struct report
 {
 	char *nameRel; // Nome della relazione
 	int size; // Numero di entita che sono destinatarie di "nameRel" (quindi size di "persone")
-    	score *persone; // Array di destinatari di "nameRel"
+	int sclen; // Quantita di celle allocate (<=size) per persone
+    	score **persone; // Array di puntatori dei destinatari di "nameRel"
 } report;
 
 
@@ -30,8 +31,8 @@ int entAmount=0;
 int relSize=0;
 int relAmount=0;
 
-report **puntRel; // TODO modifica inserisciRel
-score **puntDest;
+report **puntRel;
+
 void inserisciEnt(char *input)
 {
 	int i;
@@ -50,26 +51,19 @@ void inserisciEnt(char *input)
 	return;
 }
 
-void inserisciRel(char *o,char *d, char *r)
+void inserisciRel(char *r, int posR) // TODO Input è un puntatore a una relazione già costruita
 {
 	int i;
-	if (relAmount==0)
+	for (i=relAmount-1; (i>=0 && strcmp(puntRel[i]->nameRel,r)>0);i--)
 	{
-		strcpy(output[0].nameRel,r);
-		relAmount++;
-		return;
+		puntRel[i+1]=puntRel[i];
 	}
-	for (i=relAmount-1; (i>=0 && strcmp(output[i].nameRel,r)>0);i--)
-	{
-		//strcpy(output[i+1].nameRel,output[i].nameRel);
-		output[i+1]=output[i];
-	} // TODO Non basta strcpy
-	strcpy(entita[i+1].nameEnt,r);
+	puntRel[i+1]=&(output[relAmount]);
 	relAmount++;
 	return;
 }
 
-int searchRelInRep(report* rep, char *s, int sx, int dx){
+int searchRel(report* rep, char *s, int sx, int dx){
 	if(sx>dx) return -1;
 	int cx=(sx+dx)/2;
 	int cmp=strcmp(s,rep[cx].nameRel);
@@ -157,54 +151,123 @@ void addrel(char *input)
 	char del[] = " ";
 	char *orig=strtok(input,del);
 	orig=strtok(NULL,del);
+	int posOri=searchEnt(entita,orig,0,entAmount-1);
+	if (posOri==-1) return;
 	char* dest=strtok(NULL,del);
 	char* nameRel=strtok(NULL,del);
 	int posizioneRelazione=searchRelInRep(output,nameRel,0,relSize-1);
-	int posOri=searchEnt(entita,orig,0,entAmount-1);
-	if ((relSize==0)&&(posOri!=-1))
+	if (relSize==0)
 	{
 		output=(report*)malloc(100*sizeof(report));
-		relSize=100;
-	}
-	else if ((posizioneRelazione==-1)&&(posOri!=-1)) // Se non esiste relazione con questo nome in output
-	{ 
-		if (relAmount==relSize)
+		puntRel=(report**)malloc(100*sizeof(report*));
+		for (int c=0;i<100;i++)
 		{
-			output=(report*)realloc(output,(relSize+10)*sizeof(report));
-			output[relAmount].nameRel=(char*)malloc(50*sizeof(char));
-			// TODO strcpy(output[relAmount].nameRel,nameRel);
-			//output[relAmount].size=1;
-			output[relAmount].persone=(score*)malloc(50*sizeof(score));
-			output[relAmount].persone[0].relazionati=(char*)malloc(50*sizeof(char));
-			//strcpy(output[relAmount].persone[0].relazionati,dest);
-			output[relAmount].persone[0].posOrig=(int*)malloc(entAmount*sizeof(int));
-			for (int i=0; i<entAmount; i++) output[relAmount].persone[0].posOrig=0;
-			output[relAmount].persone[0].posOrig[posOri]=1; // Se il bit di posOrig in una posizione è 1 allora addRel ritorna.
-			//sortReport(output); // switch con inserimento ordinato
-			
+			puntRel[c]=&(output[c]);
+			output[c].nameRel=(char*)malloc(50*sizeof(char));
+			output[c].size=0;
+			output[c].sclen=50;
+			output[c].persone=(score**)malloc(50*sizeof(score*));
+			for (int d=0;d<50;d++)
+			{
+				output[c].persone[d]=(score*)malloc(sizeof(score));
+				for (int e=0;e<50;e++)
+				{
+					(output[c].persone[d])->relazionati=(char*)malloc(50*sizeof(char));
+					(output[c].persone[d])->posOrig=(int*)malloc(entAmount*sizeof(int));
+					for (int f=0;f<entAmount;f++) (output[c].persone[d])->posOrig[f]=0;
+				}
+			}
 		}
+		strcpy(output[0].nameRel,nameRel);
+		output[0].size++;
+		strcpy((output[0].persone[0])->relazionati,dest);
+		(output[0].persone[0])->posOrig[posOri]=1;
+		(output[0].persone[0])->amount++;
+		relAmount++;
+		relSize=100;
+		return;
+	}
+	if (posizioneRelazione==-1) // Se non esiste relazione con questo nome in output (MA CE NE SONO ALTRE GIA IN OUTPUT) TODO edit searchRelInRep
+	{ 
+		if (relAmount==relSize) // TODO Check se va bene ignorare che sclen e size siano uguali (forse va bene ma non so)
+		{
+			relSize+=10;
+			output=realloc(output,(relSize)*sizeof(report));
+			puntRel=realloc(puntRel,(relSize)*sizeof(report*));
+			for (int i=relAmount; i<relSize;i++) 
+			{
+				puntRel[i]=&(output[i]); //TODO Check se i tipi sono compatibili
+				output[i].nameRel=(char*)malloc(50*sizeof(char));
+				output[i].persone=(score**)malloc(50*sizeof(score*));
+				output[i].size=0;
+				output[i].sclen=50;
+				for (int j=0;j<50;j++) 
+				{
+					output[i].persone[j]=(score*)malloc(sizeof(score));
+					for (int a=0;a<50;a++) 
+					{
+						(output[i].persone[j])->relazionati=(char*)malloc(50*sizeof(char));
+						(output[i].persone[j])->posOrig=(int*)malloc(entAmount*sizeof(int));
+						for (int b=0; b<entAmount; b++) (output[i].persone[j])->posOrig[b]=0;
+					}
+				}
+			}
+		
+			// TODO strcpy(output[relAmount].nameRel,nameRel);
+			//strcpy(output[relAmount].persone[0].relazionati,dest);
+			//output[relAmount].size=1;
+			//sortReport(output); // switch con inserimento ordinato	
+		}
+		strcpy(output[relAmount].nameRel,nameRel);
+		output[relAmount].size++;
+		strcpy((output[relAmount].persone[0])->relazionati,dest);
+		(output[relAmount].persone[0])->posOrig[posOri]=1;
+		(output[relAmount].persone[0])->amount++;
+		//relAmount++;
+		inserisciRel(nameRel);
+		return;
 		//inserisciRel(orig,dest,nameRel); // TODO Implementa ordinato e ricordati il bit e aggiorna relAmount
 	}
-	else if ((posizioneRelazione!=-1)&&(posOri!=-1)) // Se esiste già una relazione che si chiama così in output
+	else // Se esiste già una relazione che si chiama così in output
 	{
-		int posDest=searchDest(output[posizioneRelazione].persone,dest,0,output[posizioneRelazione].size-1);
-		if ((posDest==-1)&&(posOri!=-1)) // Se esiste l'origine (in entita) ma non il destinatario (in persone, dentro output)
+		int posDest=searchDest(output[posizioneRelazione].persone,dest,0,output[posizioneRelazione].size-1); //TODO edit searchDest
+		if (posDest==-1) // Se non esiste il destinatario (fra i "relazionati") 
 		{
-			output[posizioneRelazione].persone=realloc(output[posizioneRelazione].persone,(output[posizioneRelazione].size+10)*sizeof(score));
-			strcpy(output[posizioneRelazione].persone[output[posizioneRelazione].size].relazionati,dest);
-			if (1==output[posizioneRelazione].persone[output[posizioneRelazione].size].posOrig[posOri]) return;
-			else output[posizioneRelazione].persone[output[posizioneRelazione].size].posOrig[posOri]=1;
-			output[posizioneRelazione].size+=10;
-			sortScore(output[posizioneRelazione].persone);
+			if (puntRel[posizioneRelazione].size==puntRel[posizioneRelazione].sclen)
+			{
+				puntRel[posizioneRelazione]->persone=realloc(puntRel[posizioneRelazione]->persone,(puntRel[posizioneRelazione]->size+10)*sizeof(score);
+				puntRel[posizioneRelazione].sclen+=10;
+				for (int a=puntRel[posizioneRelazione]->size; a< puntRel[posizioneRelazione]->sclen;a++)
+				{
+					(puntRel[posizioneRelazione]->persone[a])->relazionati=(char*)malloc(50*sizeof(char));
+					(puntRel[posizioneRelazione]->persone[a])->posOrig=(int*)malloc(entAmount*sizeof(int));
+					for (int b=0; b<entAmount; b++) (puntRel[posizioneRelazione]->persone[a])->posOrig[b]=0;
+				}
+			}
+			strcpy((puntRel[posizioneRelazione]->persone[size])->relazionati,dest);
+			(puntRel[posizioneRelazione]->persone[size])->posOrig[posOri]=1;
+			(puntRel[posizioneRelazione]->persone[size])->amount++;
+			puntRel[posizioneRelazione]->size++;
+			//output[posizioneRelazione].persone=realloc(output[posizioneRelazione].persone,(output[posizioneRelazione].size+1)*sizeof(score));		
+			//strcpy(output[posizioneRelazione].persone[output[posizioneRelazione].size].relazionati,dest);
+			//if (1==output[posizioneRelazione].persone[output[posizioneRelazione].size].posOrig[posOri]) return;
+			//else output[posizioneRelazione].persone[output[posizioneRelazione].size].posOrig[posOri]=1;
+			//output[posizioneRelazione].size+=10;
+			//sortScore(output[posizioneRelazione].persone);
 		}
-		else if ((posDest!=-1)&&(posOri!=-1)) // Se esiste sia l'origine (in entita) che il destinatario (in persone, dentro output)
+		else if (posDest!=-1) // Se esiste sia l'origine (in entita) che il destinatario (in persone, dentro output)
 		{
-			if (output[posizioneRelazione].persone[posDest].posOrig[posOri]==1) return;
-			output[posizioneRelazione].persone[posDest].posOrig[posOri]=1;
+			if ((puntRel[posizioneRelazione]->persone[posDest])->posOrig[posOri]==1) return;
+			//if (output[posizioneRelazione].persone[posDest].posOrig[posOri]==1) return;
+			(puntRel[posizioneRelazione]->persone[posDest])->posOrig[posOri]=1;
+			(puntRel[posizioneRelazione]->persone[posDest])->amount++;
+			//output[posizioneRelazione].persone[posDest].posOrig[posOri]=1;
 			//sortScore(output[posizioneRelazione].persone[posDest]);
 		}
 	}
-	relAmount++;
+	//inserisciRel(nameRel);
+	return;
+	//relAmount++;
 }
 void addent (char *ent){
 	char del[] = " ";
