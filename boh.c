@@ -63,7 +63,7 @@ void inserisciRel(char *r)
 	return;
 }
 
-void sortDest(char *r, char *d, int posRel, int posOri)
+void sortDest(char *r, char *d, char *o, int posRel, int posOri) // TODO Delete o from parameters
 {
 	int i;
 	for (i=puntRel[posRel]->size-1; (i>=0 && strncmp((puntRel[posRel]->persone[i])->relazionati,r,strlen(r))>0);i--)
@@ -73,6 +73,10 @@ void sortDest(char *r, char *d, int posRel, int posOri)
 	strcpy((puntRel[posRel]->persone[i+1])->relazionati,d);
 	(puntRel[posRel]->persone[i+1])->posOrig[posOri]=1;
 	(puntRel[posRel]->persone[i+1])->amount++;
+	printf("\nDestinatario: %s",puntRel[posRel]->persone[i+1]->relazionati);
+	printf("\nRelazione: %s",puntRel[posRel]->nameRel);
+	printf("\nOrigine: %s",o);
+	printf("\nDestinatario NON esistente: amount=%d\n", (puntRel[posRel]->persone[i+1])->amount);
 	//for (int j=0; j<puntRel[posRel]->size+1; j++) printf("SORTDEST: relazionato %s \n",puntRel[posRel]->persone[j]->relazionati);
 	puntRel[posRel]->size++;
 }
@@ -86,23 +90,23 @@ int searchRel(char *s, int sx, int dx){
 	if(cmp<0) return searchRel(s,sx,cx-1);
 	return -1;
 }
-int searchEnt(entities *a,char *s, int sx,int dx){
+int searchEnt(char *s, int sx,int dx){
 	if(sx>dx) return -1;
 	int cx=(sx+dx)/2;
-	int cmp=strcmp(s,a[cx].nameEnt);
+	int cmp=strcmp(s,entita[cx].nameEnt);
 	if(cmp==0) return cx;
-	if(cmp>0) return searchEnt(a,s,cx+1,dx);
-	if(cmp<0) return searchEnt(a,s,sx,cx-1);
+	if(cmp>0) return searchEnt(s,cx+1,dx);
+	if(cmp<0) return searchEnt(s,sx,cx-1);
 	return -1;
 }
 
-int searchDest(score **a,char *s, int sx,int dx){
+int searchDest(int a,char *s, int sx,int dx,int len){
 	if(sx>dx) return -1;
 	int cx=(sx+dx)/2;
-	int cmp=strcmp(s,a[cx]->relazionati);
+	int cmp=strncmp(s,(puntRel[a]->persone[cx])->relazionati,len);
 	if(cmp==0) return cx;
-	if(cmp>0) return searchDest(a,s,cx+1,dx);
-	if(cmp<0) return searchDest(a,s,sx,cx-1);
+	if(cmp>0) return searchDest(a,s,cx+1,dx,len);
+	if(cmp<0) return searchDest(a,s,sx,cx-1,len);
 	return -1;
 }
 
@@ -165,10 +169,11 @@ void addrel(char *input)
 	char del[] = " ";
 	char *orig=strtok(input,del);
 	orig=strtok(NULL,del);
-	int posOri=searchEnt(entita,orig,0,entAmount-1);
+	int posOri=searchEnt(orig,0,entAmount-1);
 	if (posOri==-1) return;
 	char* dest=strtok(NULL,del);
 	char* nameRel=strtok(NULL,del);
+	//printf("\nADDREL: %s -> %s mediante %s\n", orig,dest,nameRel);
 	int posizioneRelazione=searchRel(nameRel,0,relAmount-1);
 	if (relSize==0)
 	{
@@ -197,6 +202,7 @@ void addrel(char *input)
 		strcpy((output[0].persone[0])->relazionati,dest);
 		(output[0].persone[0])->posOrig[posOri]=1;
 		(output[0].persone[0])->amount++;
+		printf("\nRelazioni vuote: amount=%d\n", (output[0].persone[0])->amount);
 		relAmount++;
 		relSize=100;
 		return;
@@ -222,6 +228,7 @@ void addrel(char *input)
 					{
 						(output[i].persone[j])->relazionati=(char*)malloc(50*sizeof(char));
 						(output[i].persone[j])->posOrig=(int*)malloc(entAmount*sizeof(int));
+						(output[i].persone[j])->amount=0;
 						for (int b=0; b<entAmount; b++) (output[i].persone[j])->posOrig[b]=0;
 					}
 				}
@@ -238,6 +245,10 @@ void addrel(char *input)
 		strcpy((output[relAmount].persone[0])->relazionati,dest);
 		(output[relAmount].persone[0])->posOrig[posOri]=1;
 		(output[relAmount].persone[0])->amount++;
+		printf("\nDestinatario: %s",output[relAmount].persone[0]->relazionati);
+		printf("\nRelazione: %s",output[relAmount].nameRel);
+		printf("\nOrigine: %s",orig);
+		printf("\nRelazione NON esistente: amount=%d\n", (output[relAmount].persone[0])->amount);
 		//relAmount++;
 		inserisciRel(nameRel);
 		return;
@@ -245,7 +256,7 @@ void addrel(char *input)
 	}
 	else // Se esiste già una relazione che si chiama così in output
 	{
-		int posDest=searchDest(puntRel[posizioneRelazione]->persone,dest,0,puntRel[posizioneRelazione]->size-1); //TODO edit searchDest
+		int posDest=searchDest(posizioneRelazione,dest,0,puntRel[posizioneRelazione]->size-1,strlen(dest)); //TODO edit searchDest
 		if (posDest==-1) // Se non esiste il destinatario (fra i "relazionati") 
 		{
 			if (puntRel[posizioneRelazione]->size==puntRel[posizioneRelazione]->sclen)
@@ -261,7 +272,7 @@ void addrel(char *input)
 				}
 			}
 			//printf("Il destinatario non esiste\n");
-			sortDest(nameRel, dest, posizioneRelazione, posOri); // TODO Ordine dei relazionati?
+			sortDest(nameRel, dest, orig, posizioneRelazione, posOri); // TODO Ordine dei relazionati?
 			//output[posizioneRelazione].persone=realloc(output[posizioneRelazione].persone,(output[posizioneRelazione].size+1)*sizeof(score));		
 			//strcpy(output[posizioneRelazione].persone[output[posizioneRelazione].size].relazionati,dest);
 			//if (1==output[posizioneRelazione].persone[output[posizioneRelazione].size].posOrig[posOri]) return;
@@ -275,6 +286,10 @@ void addrel(char *input)
 			//if (output[posizioneRelazione].persone[posDest].posOrig[posOri]==1) return;
 			(puntRel[posizioneRelazione]->persone[posDest])->posOrig[posOri]=1;
 			(puntRel[posizioneRelazione]->persone[posDest])->amount++;
+			printf("\nDestinatario: %s",puntRel[posizioneRelazione]->persone[posDest]->relazionati);
+			printf("\nRelazione: %s",puntRel[posizioneRelazione]->nameRel);
+			printf("\nOrigine: %s",orig);
+			printf("\nDestinatario esistente: amount=%d\n", (puntRel[posizioneRelazione]->persone[posDest])->amount);
 			//output[posizioneRelazione].persone[posDest].posOrig[posOri]=1;
 			//sortScore(output[posizioneRelazione].persone[posDest]);
 		}
@@ -320,7 +335,7 @@ void delent(char *input) // TODO Tomorrow
 	char *ent=strtok(input,del);
 	ent=strtok(NULL,del);
 	//printf("%s\n",ent);
-	int posEnt=searchEnt(entita,ent,0,entAmount-1);
+	int posEnt=searchEnt(ent,0,entAmount-1);
 	if (posEnt==-1) return;
 	//printf("L'entità %s è al posto %d di entita\n",ent,posEnt);
 	int i;
@@ -341,7 +356,7 @@ void delent(char *input) // TODO Tomorrow
 				(puntRel[i]->persone[j])->amount--; //TODO entita in rel con se stesse
 				(puntRel[i]->persone[j])->posOrig[posEnt]=0;
 			}		
-			int related=searchDest(puntRel[i]->persone,ent,0,puntRel[i]->size-1);
+			int related=searchDest(i,ent,0,puntRel[i]->size-1,strlen(ent));
 			if(related != -1) 
 			{
 				for (int b=related;b<puntRel[i]->size-1;b++) 
@@ -370,10 +385,10 @@ void delrel(char *input)  //TODO Check se l'unica cosa da fare nel delrel è eli
 	char* nameRel=strtok(NULL,del);
 	int posRel=searchRel(nameRel,0,relAmount-1);
 	if (posRel==-1) return;
-	int posOri=searchEnt(entita,orig,0,entAmount-1);
+	int posOri=searchEnt(orig,0,entAmount-1);
 	if (posOri==-1) return;
 	int sizeOfDests=puntRel[posRel]->size;
-	int posDest=searchDest(puntRel[posRel]->persone,dest,0,sizeOfDests-1);
+	int posDest=searchDest(posRel,dest,0,sizeOfDests-1,strlen(dest));
 	if (posDest==-1) return;
 	for (int i=posDest; i<sizeOfDests-1;i++)
 	{
@@ -400,24 +415,34 @@ void reportOut()
 	}
 	int len[entAmount];
 	int max;
+	printf("\nREPORT STARTS HERE\n");
 	for (int i=0; i<relAmount; i++)
 	{
 		max=-1;
 		for (int a=0; a<entAmount; a++) len[a]=0;
-		printf("%s",puntRel[i]->nameRel);
+		printf("%s ",puntRel[i]->nameRel);
 		for (int j=0; j<puntRel[i]->size; j++)		
 		{
-			if ((puntRel[i]->persone[j])->amount>max)
+			if ((puntRel[i]->persone[j])->amount==max) 
 			{
+				printf("\t relNum: %d, destNum: %d | %d dovrebbe essere == %d \n",i,j,(puntRel[i]->persone[j])->amount,max);
+				len[searchEnt((puntRel[i]->persone[j])->relazionati,0,entAmount-1)]=1;
+			}
+			if (((puntRel[i]->persone[j])->amount) > max)
+			{
+				printf("\t relNum: %d, destNum: %d | %d dovrebbe essere > %d \n",i,j,(puntRel[i]->persone[j])->amount,max);
 				max=(puntRel[i]->persone[j])-> amount;
+				//printf("max ora è %d\n",max);
 				//printf(" %s ", (puntRel[i]->persone[j])->relazionati);
 				for (int a=0; a<entAmount; a++) len[a]=0;
+				len[searchEnt((puntRel[i]->persone[j])->relazionati,0,entAmount-1)]=1; // TODO EDIT for output
 			}
-			len[searchEnt(entita,(puntRel[i]->persone[j])->relazionati,0,entAmount-1)]=1; // TODO EDIT for output
 		}
+		//for (int f=0;f<entAmount;f++) printf("%d:%d\t",f,len[f]);
+		//printf("max: %d\n", max);
 		for (int b=0;b<entAmount;b++)
 		{
-			if (len[b]==1) printf(" %s ", entita[b].nameEnt);
+			if (len[b]==1) printf("%s ", entita[b].nameEnt);
 		}
 		printf("%d; ",max);
 	}
