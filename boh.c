@@ -54,7 +54,8 @@ void inserisciEnt(char *input)
 void inserisciRel(char *r)
 {
 	int i;
-	for (i=relAmount-1; (i>=0 && strncmp(puntRel[i]->nameRel,r,strlen(r))>0);i--)
+	int lungh=strlen(r);
+	for (i=relAmount-1; (i>=0 && strncmp(puntRel[i]->nameRel,r,lungh)>0);i--)
 	{
 		puntRel[i+1]=puntRel[i];
 	}
@@ -63,19 +64,23 @@ void inserisciRel(char *r)
 	return;
 }
 
-void sortDest(char *r, char *d, char *o, int posRel, int posOri) // TODO Delete o from parameters
+void sortDest(char *r, char *d, int posRel, int posOri) // TODO Delete o from parameters
 {
-	int i;
-	for (i=puntRel[posRel]->size-1; (i>=0 && strncmp((puntRel[posRel]->persone[i])->relazionati,r,strlen(r))>0);i--)
+	int i=puntRel[posRel]->size-1;
+	int lungh=strlen(d);
+	//printf("RISULTATO PRIMA STRNCMP: %d\n FACCIO %s - %s",strncmp((puntRel[posRel]->persone[i])->relazionati,r,lungh),(puntRel[posRel]->persone[i])->relazionati,r);
+	for (i=puntRel[posRel]->size-1; (i>=0 && (strncmp((puntRel[posRel]->persone[i])->relazionati,d,lungh)>0));i--)
 	{
+		printf("\n SORTDEST: %s > %s",(puntRel[posRel]->persone[i])->relazionati,d);
 		puntRel[posRel]->persone[i+1]=puntRel[posRel]->persone[i];
 	}
 	strcpy((puntRel[posRel]->persone[i+1])->relazionati,d);
+	printf("\nAggiorno l'amount di %s\n",(puntRel[posRel]->persone[i+1])->relazionati);
 	(puntRel[posRel]->persone[i+1])->posOrig[posOri]=1;
 	(puntRel[posRel]->persone[i+1])->amount++;
 	printf("\nDestinatario: %s",puntRel[posRel]->persone[i+1]->relazionati);
 	printf("\nRelazione: %s",puntRel[posRel]->nameRel);
-	printf("\nOrigine: %s",o);
+	//printf("\nOrigine: %s",o);
 	printf("\nDestinatario NON esistente: amount=%d\n", (puntRel[posRel]->persone[i+1])->amount);
 	//for (int j=0; j<puntRel[posRel]->size+1; j++) printf("SORTDEST: relazionato %s \n",puntRel[posRel]->persone[j]->relazionati);
 	puntRel[posRel]->size++;
@@ -261,7 +266,7 @@ void addrel(char *input)
 		{
 			if (puntRel[posizioneRelazione]->size==puntRel[posizioneRelazione]->sclen)
 			{
-				//printf("Il dest non esiste e rialloco spazio\n");
+				printf("Il dest non esiste e rialloco spazio\n");
 				puntRel[posizioneRelazione]->persone=realloc(puntRel[posizioneRelazione]->persone,(puntRel[posizioneRelazione]->size+10)*sizeof(score));
 				puntRel[posizioneRelazione]->sclen+=10;
 				for (int a=puntRel[posizioneRelazione]->size; a< puntRel[posizioneRelazione]->sclen;a++)
@@ -272,7 +277,7 @@ void addrel(char *input)
 				}
 			}
 			//printf("Il destinatario non esiste\n");
-			sortDest(nameRel, dest, orig, posizioneRelazione, posOri); // TODO Ordine dei relazionati?
+			sortDest(nameRel, dest, posizioneRelazione, posOri); // TODO Ordine dei relazionati?
 			//output[posizioneRelazione].persone=realloc(output[posizioneRelazione].persone,(output[posizioneRelazione].size+1)*sizeof(score));		
 			//strcpy(output[posizioneRelazione].persone[output[posizioneRelazione].size].relazionati,dest);
 			//if (1==output[posizioneRelazione].persone[output[posizioneRelazione].size].posOrig[posOri]) return;
@@ -290,13 +295,10 @@ void addrel(char *input)
 			printf("\nRelazione: %s",puntRel[posizioneRelazione]->nameRel);
 			printf("\nOrigine: %s",orig);
 			printf("\nDestinatario esistente: amount=%d\n", (puntRel[posizioneRelazione]->persone[posDest])->amount);
-			//output[posizioneRelazione].persone[posDest].posOrig[posOri]=1;
-			//sortScore(output[posizioneRelazione].persone[posDest]);
+		
 		}
 	}
-	//inserisciRel(nameRel);
 	return;
-	//relAmount++;
 }
 void addent (char *ent){
 	char del[] = " ";
@@ -415,7 +417,7 @@ void reportOut()
 	}
 	int len[entAmount];
 	int max;
-	printf("\nREPORT STARTS HERE\n");
+	//printf("\nREPORT STARTS HERE\n");
 	for (int i=0; i<relAmount; i++)
 	{
 		max=-1;
@@ -425,12 +427,12 @@ void reportOut()
 		{
 			if ((puntRel[i]->persone[j])->amount==max) 
 			{
-				printf("\t relNum: %d, destNum: %d | %d dovrebbe essere == %d \n",i,j,(puntRel[i]->persone[j])->amount,max);
+				//printf("\t relNum: %d, destNum: %d | %d dovrebbe essere == %d \n",i,j,(puntRel[i]->persone[j])->amount,max);
 				len[searchEnt((puntRel[i]->persone[j])->relazionati,0,entAmount-1)]=1;
 			}
 			if (((puntRel[i]->persone[j])->amount) > max)
 			{
-				printf("\t relNum: %d, destNum: %d | %d dovrebbe essere > %d \n",i,j,(puntRel[i]->persone[j])->amount,max);
+				//printf("\t relNum: %d, destNum: %d | %d dovrebbe essere > %d \n",i,j,(puntRel[i]->persone[j])->amount,max);
 				max=(puntRel[i]->persone[j])-> amount;
 				//printf("max ora è %d\n",max);
 				//printf(" %s ", (puntRel[i]->persone[j])->relazionati);
